@@ -300,7 +300,7 @@ bookBtn.addEventListener("click", async function() {
   if(consentCheckbox.checked) {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
-    const email = username + '@smileclinic.com'; // Use username as email base
+    const email = username.includes('@') ? username : username + '@smileclinic.com'; // Use username as email base
     
     if(!username || !password) {
       alert("Please create a username and password for your clinic history.");
@@ -335,19 +335,48 @@ bookBtn.addEventListener("click", async function() {
           localStorage.setItem('userId', registerData.data.user.id);
         }
         // Show success message
-        successMsg.textContent = `✅ Account created! Username: ${username}\nNow booking your appointment...`;
+        successMsg.textContent = `✅ Account created! Username: ${email}\nNow booking your appointment...`;
         successMsg.style.color = 'green';
       } else {
-        // Show registration error
-        successMsg.textContent = `⚠️ Account creation failed: ${registerData.message || 'Unknown error'}\nBooking appointment without account...`;
-        successMsg.style.color = 'orange';
-        // Continue with booking anyway
+        // If user already exists, try login so we can still link history
+        if (registerData.message && registerData.message.toLowerCase().includes('exists')) {
+          const loginRes = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const loginData = await loginRes.json();
+          if (loginData.success && loginData.data?.user?.id) {
+            patientId = loginData.data.user.id;
+            if (loginData.data.token) {
+              localStorage.setItem('authToken', loginData.data.token);
+              localStorage.setItem('userId', loginData.data.user.id);
+            }
+            successMsg.textContent = `ℹ️ Account already exists. Logged in as ${email}. Proceeding to book...`;
+            successMsg.style.color = 'green';
+          } else {
+            successMsg.textContent = `⚠️ Account exists but login failed: ${loginData.message || 'Check password'}`;
+            successMsg.style.color = 'red';
+            bookBtn.disabled = false;
+            bookBtn.textContent = 'Book Now ';
+            return; // Stop booking to avoid orphaned appointment
+          }
+        } else {
+          // Show registration error and stop booking
+          successMsg.textContent = `⚠️ Account creation failed: ${registerData.message || 'Unknown error'}`;
+          successMsg.style.color = 'red';
+          bookBtn.disabled = false;
+          bookBtn.textContent = 'Book Now ';
+          return;
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
-      successMsg.textContent = `⚠️ Error creating account: ${error.message}\nBooking appointment without account...`;
-      successMsg.style.color = 'orange';
-      // Continue with booking even if registration fails
+      successMsg.textContent = `⚠️ Error creating account: ${error.message}`;
+      successMsg.style.color = 'red';
+      bookBtn.disabled = false;
+      bookBtn.textContent = 'Book Now ';
+      return;
     }
     
     bookBtn.disabled = false;
