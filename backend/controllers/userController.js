@@ -190,19 +190,8 @@ const getPatientHistory = async (req, res, next) => {
       return next(new AppError('Not authorized to view this history', 403));
     }
 
-    // Get user info to match by phone/name as well
-    const user = await User.findById(userId);
-    
-    // Find appointments by patient ID OR by phone/name (for appointments made without account)
-    const query = {
-      $or: [
-        { patient: userId },
-        ...(user && user.phone ? [{ patientPhone: user.phone }] : []),
-        ...(user && user.name ? [{ patientName: user.name }] : [])
-      ]
-    };
-
-    const appointments = await Appointment.find(query)
+    // Only return appointments explicitly linked to this patient account
+    const appointments = await Appointment.find({ patient: userId })
       .sort({ date: -1, time: -1 });
 
     res.status(200).json({
