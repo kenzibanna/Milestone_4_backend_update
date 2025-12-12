@@ -1,0 +1,201 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="chatbot.css">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smile Dental Clinic</title>
+  <link rel="stylesheet" href="DentalProject.css">
+
+  <!-- React CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Welcome to Smile Dental Clinic </h1>
+  <p class="tagline">"Where Every Smile Begins Its Journey "</p>
+</header>
+
+<nav class="navbar">
+  <div class="logo">SMILE CLINIC </div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home </a></li>
+    <li><a href="DoctorsDP.html">Our Doctors </a></li>
+    <li><a href="ServiceDP.html">Our Services </a></li>
+    <li><a href="EmergencyDP.html" class="emergency-btn">Emergency </a></li>
+    <li><a href="BookingDP.html">Book Now </a></li>
+  <li><a href="HistoryDP.html">Patient History </a></li>
+  </ul>
+</nav>
+
+<!-- Why Choose Us Section (From About Us Page) -->
+<section class="about-container">
+  <h2>Why Choose Us? </h2>
+  <div id="why-choose-us"></div>
+</section>
+
+<style>
+  .why-choose-us-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .feature-card {
+    background: #f0fcff;
+    border-radius: 15px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  .feature-card:hover {
+    background: #d0f4f9;
+    transform: translateY(-5px);
+  }
+  .feature-details {
+    margin-top: 10px;
+    color: #2ec4b6;
+  }
+</style>
+
+<script>
+  // React Without JSX
+  const e = React.createElement;
+  const { useState } = React;
+
+  function WhyChooseUs() {
+    const features = [
+      {title: "Modern digital X-rays & treatment history", details: "We use state-of-the-art X-ray equipment and keep your full history digitally for easy access."},
+      {title: "Real-time online booking & confirmations", details: "Schedule appointments online instantly and get confirmations via SMS or WhatsApp."},
+      {title: "Gentle care using the newest technology", details: "Our team provides pain-free treatments using the latest dental tech."},
+      {title: "Highly qualified Egyptian dentists", details: "All our doctors are certified professionals with years of experience in their specialties."}
+    ];
+
+    const [activeIndex, setActiveIndex] = useState(null);
+
+    return e("div", {className: "why-choose-us-cards"},
+      features.map((feature, index) =>
+        e("div", {
+          key: index,
+          className: "feature-card",
+          onClick: () => setActiveIndex(activeIndex === index ? null : index)
+        },
+          e("h3", null, feature.title),
+          activeIndex === index ? e("p", {className: "feature-details"}, feature.details) : null
+        )
+      )
+    );
+  }
+
+  ReactDOM.render(
+    e(WhyChooseUs),
+    document.getElementById("why-choose-us")
+  );
+</script>
+
+
+<!-- Services Section with React -->
+<section class="services-section">
+  <h2>Our Services </h2>
+  <div id="services-react"></div> <!-- React Component Placeholder -->
+</section>
+
+<!-- Buttons -->
+<section class="button-section">
+  <button onclick="goTo('HistoryDP.html')" class="history-btn"> View My Clinic History</button>
+</section>
+
+<!-- Location -->
+<section class="location-map">
+  <p>📍 Medical Center, East Hub Madinaty<br>First Floor – Clinic 140</p>
+</section>
+
+<footer>Smile Dental Clinic © 2025</footer>
+
+<!-- JAVASCRIPT PAGE LINKING -->
+<script>
+  function goTo(page) {
+    window.location.href = page;
+  }
+</script>
+
+<!-- React Script -->
+<script type="text/babel">
+  function getApiBase() {
+    const origin = window.location.origin;
+    if (origin.startsWith('file:')) return 'http://localhost:3000/api';
+    return `${origin.replace(/\/$/, '')}/api`;
+  }
+  const API_URL = getApiBase();
+
+  function FeaturedServices() {
+    const [services, setServices] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      fetch(`${API_URL}/services`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.success && result.data.services) {
+            setServices(result.data.services);
+          }
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error loading services:', error);
+          setLoading(false);
+        });
+    }, []);
+
+    if (loading) {
+      return <div style={{textAlign: 'center', padding: '40px'}}>Loading services...</div>;
+    }
+
+    if (services.length === 0) {
+      return <div style={{textAlign: 'center', padding: '40px'}}>No services available.</div>;
+    }
+
+    return (
+      <div className="interactive-services">
+        {services.map(service => (
+          <div className="card" key={service._id}>
+            <h3>{service.name}</h3>
+            <p>{service.description || 'Click below to book this service!'}</p>
+            <button 
+              className="service-btn" 
+              onClick={() => window.location.href = service.category === 'Emergency' ? `EmergencyDP.html?service=${service._id}` : `BookingDP.html?service=${service._id}`}
+            >
+              {service.category === 'Emergency' ? 'Emergency' : 'Book Now'}
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  ReactDOM.render(<FeaturedServices />, document.getElementById("services-react"));
+</script>
+<script src="inject-chatbot.js"></script>
+<!-- Chatbot Widget -->
+<div id="chatbot-icon">💬</div>
+
+<div id="chatbot-window">
+    <div class="chatbot-header">Smile Dental Support</div>
+    <div class="chatbot-messages"></div>
+    <div class="chatbot-input">
+        <input type="text" id="chatbot-text" placeholder="Type your message...">
+        <button id="chatbot-send">Send</button>
+    </div>
+</div>
+
+<script src="chatbot.js"></script>
+<script src="inject-chatbot.js"></script>
+
+</body>
+</html>

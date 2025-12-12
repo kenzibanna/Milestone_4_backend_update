@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="chatbot.css">
+
+  <meta charset="UTF-8">
+  <title>Our Doctors – Smile Clinic</title>
+  <link rel="stylesheet" href="DentalProject.css">
+
+  <!-- React CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">SMILE CLINIC </div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home </a></li>
+    <li><a href="DoctorsDP.html" class="active">Our Doctors </a></li>
+    <li><a href="ServiceDP.html">Our Services </a></li>
+    <li><a href="EmergencyDP.html" class="emergency-btn">Emergency </a></li>
+    <li><a href="BookingDP.html">Book Now </a></li>
+   <li><a href="HistoryDP.html">Patient History </a></li>
+  </ul>
+</nav>
+
+<section class="doctors-page">
+  <h1> Meet Our Specialist Team</h1>
+
+  <!-- Single React Container -->
+  <div id="doctors-app"></div>
+</section>
+
+<script>
+  const e = React.createElement;
+  const { useState, useEffect } = React;
+  function getApiBase() {
+    const origin = window.location.origin;
+    if (origin.startsWith('file:')) return 'http://localhost:3000/api';
+    return `${origin.replace(/\/$/, '')}/api`;
+  }
+  const API_URL = getApiBase();
+
+  function DoctorsApp() {
+    const [doctors, setDoctors] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState("All");
+
+    useEffect(() => {
+      // Fetch doctors from API
+      fetch(`${API_URL}/doctors`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.success && result.data.doctors) {
+            setDoctors(result.data.doctors);
+          }
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error loading doctors:', error);
+          setLoading(false);
+        });
+    }, []);
+
+    const specialties = ["All", ...new Set(doctors.map(d => d.specialty))];
+    const filteredDoctors = filter === "All" ? doctors : doctors.filter(d => d.specialty === filter);
+
+    if (loading) {
+      return e("div", {style: {textAlign: "center", padding: "40px"}}, "Loading doctors...");
+    }
+
+    if (doctors.length === 0) {
+      return e("div", {style: {textAlign: "center", padding: "40px"}}, "No doctors available.");
+    }
+
+    // Filter buttons
+    const filterButtons = e("div", {className: "filter-buttons"},
+      specialties.map(spec =>
+        e("button", {key: spec, onClick: () => setFilter(spec)}, spec)
+      )
+    );
+
+    // Doctor cards
+    const doctorCards = e("div", {className: "doctor-grid"},
+      filteredDoctors.map((doc) =>
+        e("div", {key: doc._id, className: "doctor-card"},
+          e("img", {src: doc.image || `https://placehold.co/250x250?text=${doc.name.split(' ')[1]}`, alt: doc.name}),
+          e("h3", null, doc.name),
+          e("p", null, doc.specialty),
+          doc.bio ? e("p", {style: {fontSize: "14px", color: "#666", marginTop: "10px"}}, doc.bio) : null
+        )
+      )
+    );
+
+    return e("div", null, filterButtons, doctorCards);
+  }
+
+  ReactDOM.render(e(DoctorsApp), document.getElementById("doctors-app"));
+</script>
+<script src="inject-chatbot.js"></script>
+<!-- Chatbot Widget -->
+<div id="chatbot-icon">💬</div>
+
+<div id="chatbot-window">
+    <div class="chatbot-header">Smile Dental Support</div>
+    <div class="chatbot-messages"></div>
+    <div class="chatbot-input">
+        <input type="text" id="chatbot-text" placeholder="Type your message...">
+        <button id="chatbot-send">Send</button>
+    </div>
+</div>
+
+<script src="chatbot.js"></script>
+<script src="inject-chatbot.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!-- BookingDP.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Appointment - Smile Dental Clinic</title>
+  <link rel="stylesheet" href="DentalProject.css">
+  <style>
+    /* Booking Form Styles */
+    .booking-section {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #e8faff;
+      padding: 30px;
+      border-radius: 25px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      font-family: Arial, sans-serif;
+    }
+    .booking-section h2 {
+      text-align: center;
+      color: #2ec4b6;
+      margin-bottom: 20px;
+    }
+    .booking-section label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    .booking-section input, .booking-section select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .booking-section input[type="checkbox"] {
+      width: auto;
+      margin-right: 10px;
+    }
+    .booking-section button {
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
+      background: linear-gradient(135deg, #7ddfff, #2ec4b6);
+      color: white;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .booking-section button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    #successMsg {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">SMILE CLINIC </div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home </a></li>
+    <li><a href="DoctorsDP.html">Our Doctors </a></li>
+    <li><a href="ServiceDP.html">Our Services </a></li>
+    <li><a href="EmergencyDP.html" class="emergency-btn">Emergency </a></li>
+    <li><a href="BookingDP.html">Book Now </a></li>
+    <li><a href="HistoryDP.html">Patient History </a></li>
+  </ul>
+</nav> 
+
+<section class="booking-section">
+  <h2>Book Your Appointment </h2>
+
+  <div id="selectedService" style="background: #d1fae5; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: none;">
+    <strong>Selected Service:</strong> <span id="serviceName">-</span>
+  </div>
+
+  <label for="date">Select Date :</label>
+  <input type="date" id="date" required>
+
+  <label for="service">Select Service :</label>
+  <select id="service" required>
+    <option disabled selected>Select Service</option>
+  </select>
+
+  <label for="doctor">Select Doctor :</label>
+  <select id="doctor" required>
+    <option disabled selected>Select Doctor</option>
+    <option>Dr. Ahmed Amer</option>
+    <option>Dr. Sarah Hany</option>
+    <option>Dr. Youmna Galeb</option>
+    <option>Dr. Mai Mansour</option>
+    <option>Dr. Youssef Kamel</option>
+  </select>
+
+  <label for="time">Select Time :</label>
+  <select id="time" required>
+    <option disabled selected>Select Time</option>
+  </select>
+
+  <label for="name">Full Name:</label>
+  <input type="text" id="name" placeholder="John Doe" required>
+
+  <label for="phone">Phone Number:</label>
+  <input type="tel" id="phone" placeholder="010XXXXXXXX" required>
+
+  <label for="age">Age:</label>
+  <input type="number" id="age" placeholder="25" required>
+
+  <label for="gender">Gender:</label>
+  <select id="gender" required>
+    <option disabled selected>Select Gender</option>
+    <option>Male</option>
+    <option>Female</option>
+    <option>Other</option>
+  </select>
+
+  <label><input type="checkbox" id="consent"> I want to create a clinic history </label>
+
+  <div id="loginInfo" style="display:none;">
+    <label for="username">Choose Username:</label>
+    <input type="text" id="username" placeholder="Username">
+    <label for="password">Choose Password:</label>
+    <input type="password" id="password" placeholder="Password">
+  </div>
+
+  <button id="bookBtn">Book Now </button>
+  <p id="successMsg"></p>
+</section>
+
+<script>
+function getApiBase() {
+  const origin = window.location.origin;
+  if (origin.startsWith('file:')) return 'http://localhost:3000/api';
+  return `${origin.replace(/\/$/, '')}/api`;
+}
+const API_URL = getApiBase();
+let doctorsData = [];
+let doctorTimes = {};
+let selectedServiceId = null;
+let selectedServiceName = null;
+
+const doctorSelect = document.getElementById("doctor");
+const timeSelect = document.getElementById("time");
+const serviceSelect = document.getElementById("service");
+const consentCheckbox = document.getElementById("consent");
+const loginInfo = document.getElementById("loginInfo");
+const bookBtn = document.getElementById("bookBtn");
+const successMsg = document.getElementById("successMsg");
+const selectedServiceDiv = document.getElementById("selectedService");
+const serviceNameSpan = document.getElementById("serviceName");
+let servicesData = [];
+
+// Get service ID from URL parameter
+function getUrlParameter(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+// Load selected service from URL
+async function loadSelectedService() {
+  const serviceId = getUrlParameter('service');
+  if (serviceId) {
+    try {
+      const response = await fetch(`${API_URL}/services/${serviceId}`);
+      const result = await response.json();
+      
+      if (result.success && result.data.service) {
+        selectedServiceId = result.data.service._id;
+        selectedServiceName = result.data.service.name;
+        
+        // Set the service in dropdown
+        serviceSelect.value = selectedServiceId;
+        
+        // Show banner
+        serviceNameSpan.textContent = selectedServiceName;
+        selectedServiceDiv.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Error loading service:', error);
+    }
+  }
+}
+
+// Update selected service when dropdown changes
+serviceSelect.addEventListener('change', function() {
+  const selectedService = servicesData.find(s => s._id === this.value);
+  if (selectedService) {
+    selectedServiceId = selectedService._id;
+    selectedServiceName = selectedService.name;
+    serviceNameSpan.textContent = selectedServiceName;
+    selectedServiceDiv.style.display = 'block';
+  } else {
+    selectedServiceId = null;
+    selectedServiceName = null;
+    selectedServiceDiv.style.display = 'none';
+  }
+});
+
+// Fetch services from API
+async function loadServices() {
+  try {
+    const response = await fetch(`${API_URL}/services`);
+    const result = await response.json();
+    
+    if (result.success && result.data.services) {
+      servicesData = result.data.services;
+      
+      // Populate service dropdown
+      serviceSelect.innerHTML = '<option disabled selected>Select Service</option>';
+      
+      servicesData.forEach(service => {
+        const option = document.createElement('option');
+        option.value = service._id;
+        option.textContent = service.name;
+        serviceSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error loading services:', error);
+  }
+}
+
+// Fetch doctors from API
+async function loadDoctors() {
+  try {
+    const response = await fetch(`${API_URL}/doctors`);
+    const result = await response.json();
+    
+    if (result.success && result.data.doctors) {
+      doctorsData = result.data.doctors;
+      
+      // Populate doctor dropdown
+      doctorSelect.innerHTML = '<option disabled selected>Select Doctor</option>';
+      
+      doctorsData.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc._id; // Use doctor ID
+        option.textContent = doc.name;
+        option.setAttribute('data-name', doc.name);
+        doctorSelect.appendChild(option);
+        
+        // Save available times for each doctor
+        doctorTimes[doc._id] = doc.availableTimes || [];
+      });
+    }
+  } catch (error) {
+    console.error('Error loading doctors:', error);
+    successMsg.textContent = '⚠️ Error loading doctors. Please refresh the page.';
+    successMsg.style.color = 'red';
+  }
+}
+
+// Update times dynamically when doctor changes
+doctorSelect.addEventListener("change", function() {
+  const doctorId = doctorSelect.value;
+  const times = doctorTimes[doctorId] || [];
+  
+  timeSelect.innerHTML = '<option disabled selected>Select Time</option>';
+  times.forEach(time => {
+    const option = document.createElement("option");
+    option.value = time;
+    option.textContent = time;
+    timeSelect.appendChild(option);
+  });
+});
+
+// Show login fields if consent is checked
+consentCheckbox.addEventListener("change", function() {
+  loginInfo.style.display = consentCheckbox.checked ? "block" : "none";
+});
+
+// Book appointment
+bookBtn.addEventListener("click", async function() {
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const age = document.getElementById("age").value;
+  const gender = document.getElementById("gender").value;
+  const doctorId = doctorSelect.value;
+  const doctorName = doctorSelect.options[doctorSelect.selectedIndex].getAttribute('data-name');
+  const serviceId = serviceSelect.value || selectedServiceId; // Use dropdown value or URL parameter
+  const time = timeSelect.value;
+  const date = document.getElementById("date").value;
+
+  if(!name || !phone || !age || !gender || !doctorId || !time || !date || !serviceId) {
+    alert("Please fill all required fields including service!");
+    return;
+  }
+
+  // Check if user wants to create account
+  let patientId = null;
+  if(consentCheckbox.checked) {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const email = username + '@smileclinic.com'; // Use username as email base
+    
+    if(!username || !password) {
+      alert("Please create a username and password for your clinic history.");
+      return;
+    }
+
+    // Register user first
+    bookBtn.disabled = true;
+    bookBtn.textContent = 'Creating account...';
+    
+    try {
+      const registerResponse = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          password: password,
+          phone: phone,
+          age: parseInt(age),
+          gender: gender
+        })
+      });
+
+      const registerData = await registerResponse.json();
+      
+      if (registerData.success) {
+        patientId = registerData.data.user.id;
+        // Save token and user info for future use
+        if (registerData.data.token) {
+          localStorage.setItem('authToken', registerData.data.token);
+          localStorage.setItem('userId', registerData.data.user.id);
+        }
+        // Show success message
+        successMsg.textContent = `✅ Account created! Username: ${username}\nNow booking your appointment...`;
+        successMsg.style.color = 'green';
+      } else {
+        // Show registration error
+        successMsg.textContent = `⚠️ Account creation failed: ${registerData.message || 'Unknown error'}\nBooking appointment without account...`;
+        successMsg.style.color = 'orange';
+        // Continue with booking anyway
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      successMsg.textContent = `⚠️ Error creating account: ${error.message}\nBooking appointment without account...`;
+      successMsg.style.color = 'orange';
+      // Continue with booking even if registration fails
+    }
+    
+    bookBtn.disabled = false;
+    bookBtn.textContent = 'Book Now ';
+  }
+
+  // Book appointment
+  bookBtn.disabled = true;
+  bookBtn.textContent = 'Booking...';
+  successMsg.textContent = '';
+  successMsg.style.color = 'green';
+
+  try {
+    const appointmentData = {
+      doctor: doctorId,
+      service: serviceId, // Always include service from dropdown
+      date: date,
+      time: time,
+      patientName: name,
+      patientPhone: phone,
+      patientAge: parseInt(age),
+      patientGender: gender,
+      type: 'regular'
+    };
+
+    // Only include patient ID if account was created
+    if (patientId) {
+      appointmentData.patient = patientId;
+    }
+    // If no patientId, appointment will be created without patient account (patient field will be undefined/null)
+
+    const response = await fetch(`${API_URL}/appointments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(appointmentData)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      let successMessage = `✅ Booking Successful!\nPatient: ${name}\nDoctor: ${doctorName}\nDate: ${date}\nTime: ${time}\n\nYour appointment ID: ${result.data.appointment._id}`;
+      
+      if (patientId) {
+        const username = document.getElementById("username").value;
+        successMessage += `\n\n📘 Account created!\nUsername: ${username}\nYou can now view your history in "Patient History" page.`;
+      } else if (consentCheckbox.checked) {
+        successMessage += `\n\n⚠️ Note: Account creation failed, but appointment was booked.`;
+      }
+      
+      successMsg.textContent = successMessage;
+      successMsg.style.color = 'green';
+      
+      // Clear form
+      document.getElementById("name").value = '';
+      document.getElementById("phone").value = '';
+      document.getElementById("age").value = '';
+      document.getElementById("date").value = '';
+      document.getElementById("username").value = '';
+      document.getElementById("password").value = '';
+      doctorSelect.selectedIndex = 0;
+      serviceSelect.selectedIndex = 0;
+      timeSelect.innerHTML = '<option disabled selected>Select Time</option>';
+      document.getElementById("gender").selectedIndex = 0;
+      consentCheckbox.checked = false;
+      loginInfo.style.display = 'none';
+      selectedServiceDiv.style.display = 'none';
+    } else {
+      successMsg.textContent = `❌ Error: ${result.message || 'Failed to book appointment'}`;
+      successMsg.style.color = 'red';
+    }
+  } catch (error) {
+    console.error('Booking error:', error);
+    successMsg.textContent = '❌ Error booking appointment. Please try again.';
+    successMsg.style.color = 'red';
+  } finally {
+    bookBtn.disabled = false;
+    bookBtn.textContent = 'Book Now ✅';
+  }
+});
+
+// Load services, doctors and selected service when page loads
+loadServices();
+loadDoctors();
+loadSelectedService();
+</script>
